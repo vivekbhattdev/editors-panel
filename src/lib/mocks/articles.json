@@ -1,0 +1,25 @@
+{
+  "items": [
+    {
+      "id": "a-001",
+      "title": "Getting started with Editors Panel",
+      "status": "Draft",
+      "author": "Vivek",
+      "createdAt": "2026-05-09T13:10:00.000Z"
+    },
+    {
+      "id": "a-002",
+      "title": "Release notes v0.1",
+      "status": "Published",
+      "author": "Team",
+      "createdAt": "2026-05-01T09:30:00.000Z"
+    },
+    {
+      "id": "a-003",
+      "title": "How we mock the API in SvelteKit",
+      "status": "Draft",
+      "author": "Dev",
+      "createdAt": "2026-04-28T18:05:00.000Z"
+    }
+  ]
+}
