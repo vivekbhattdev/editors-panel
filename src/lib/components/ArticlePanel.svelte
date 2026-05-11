@@ -2,27 +2,54 @@
 	import {
 		Pencil,
 		Trash2,
+    Search,
+    Plus,
 		FileText
 	} from '@lucide/svelte';
 	import { formatDate } from "$lib/utils/date";
 	import { onMount } from 'svelte';
 	import { fetchArticles } from '$lib/api/articles';
 	import type { ArticleListResponse } from '$lib/api/articles';
+	import Button from './ui/button/Button.svelte';
+	import Link from './ui/link/Link.svelte';
 
+  const STATUS_OPTIONS = ['All', 'Published', 'Draft'] as const;
+	type StatusFilter = (typeof STATUS_OPTIONS)[number];
+
+  let statusFilter = $state<StatusFilter>('All');
+
+  let search = $state('');
+	let debouncedSearch = $state('');
+	let page = $state(1);
   let data = $state<ArticleListResponse>();
   let isLoading = $state(true);
   let loadError = $state("");
 
-  onMount(async () => {
-    try {
-      const res = await fetchArticles();
-      data = res;
-    } catch (err) {
-      loadError = `Something went wrong`;
-    } finally {
-      isLoading = false;
+  $effect(() => {
+    async function load(params: URLSearchParams) {
+      try {
+        const res = await fetchArticles(params);
+        data = res;
+      } catch (err) {
+        loadError = `Something went wrong`;
+      } finally {
+        isLoading = false;
+      }
     }
+
+    const params = new URLSearchParams({
+      search: search,
+      status: statusFilter,
+    })
+    load(params);
+
   })
+
+  function handleStatusChange(status: StatusFilter) {
+		statusFilter = status;
+		page = 1;
+	}
+
 </script>
 
 
@@ -33,6 +60,34 @@
       <div>
         <h1 class="text-foreground text-2xl font-semibold">Articles</h1>
         <p class="text-muted-foreground mt-1">Manage and organize your content</p>
+      </div>
+      <Button>
+        <Plus class="h-4 w-4" />
+        New Article
+      </Button>
+    </div>
+
+    <div class="mb-6 flex flex-col gap-4 sm:flex-row">
+      <div class="relative flex-1">
+        <Search
+          class="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2"
+        />
+        <input
+          type="text"
+          placeholder="Search articles..."
+          bind:value={search}
+          class="border-border bg-card text-foreground placeholder:text-muted-foreground focus:ring-ring w-full rounded-md border py-2.5 pr-4 pl-10 transition-colors focus:ring-2 focus:outline-none"
+        />
+      </div>
+
+      <div class="bg-secondary flex items-center gap-1 rounded-md p-1">
+        {#each STATUS_OPTIONS as status (status)}          
+          <Button 
+            variant={statusFilter === status ? 'primary' : 'ghost'}
+            onclick={() => handleStatusChange(status)}>
+            {status}
+          </Button>
+        {/each}
       </div>
     </div>
 
@@ -70,12 +125,13 @@
               class="hover:bg-secondary/30 flex flex-col gap-2 px-6 py-4 transition-colors md:grid md:grid-cols-[1fr_120px_140px_140px_80px] md:items-center md:gap-4"
             >
               <div class="min-w-0 flex-1">
-                <button
-                  type="button"
-                  class="text-foreground hover:text-primary block truncate text-left font-medium transition-colors"
+                <Link
+                  href={`/articles/${article.id}`}
+                  variant="muted"
+                  className="block truncate text-left max-w-[stretch]"
                 >
                   {article.title}
-                </button>
+                </Link>
                 <p class="text-muted-foreground mt-0.5 truncate text-sm md:hidden">
                   {article.author} · {formatDate(article.createdAt)}
                 </p>
@@ -93,20 +149,20 @@
                 {formatDate(article.createdAt)}
               </span>
               <div class="flex items-center justify-end gap-1">
-                <button
-                  type="button"
-                  class="text-muted-foreground hover:text-foreground hover:bg-secondary rounded-md p-2 transition-colors"
+                <Button
+                  variant="ghost"
+                  iconOnlyLabel="Edit"
                   title="Edit"
                 >
                   <Pencil class="h-4 w-4" />
-                </button>
-                <button
-                  type="button"
-                  class="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md p-2 transition-colors"
+                </Button>
+                <Button
+                  variant="ghost"
+                  iconOnlyLabel="Delete"
                   title="Delete"
                 >
                   <Trash2 class="h-4 w-4" />
-                </button>
+                </Button>
               </div>
             </div>
           {/each}
