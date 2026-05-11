@@ -1,9 +1,11 @@
 import type { Article } from "$lib/types/article";
+import type { Pagination } from "$lib/types/pagination";
 
 
 export type ArticleListResponse = {
-    items: Article[];
-}
+	items: Article[];
+	pagination: Pagination;
+};
 
 export async function fetchArticles(params: URLSearchParams): Promise<ArticleListResponse> {
     const res = await fetch(`/api/articles?${params}`);

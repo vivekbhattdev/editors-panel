@@ -7,11 +7,12 @@
 		FileText
 	} from '@lucide/svelte';
 	import { formatDate } from "$lib/utils/date";
-	import { onMount } from 'svelte';
 	import { fetchArticles } from '$lib/api/articles';
 	import type { ArticleListResponse } from '$lib/api/articles';
 	import Button from './ui/button/Button.svelte';
 	import Link from './ui/link/Link.svelte';
+	import ArticleStatusBadge from './ArticleStatusBadge.svelte';
+	import Pagination from './ui/pagination/Pagination.svelte';
 
   const STATUS_OPTIONS = ['All', 'Published', 'Draft'] as const;
 	type StatusFilter = (typeof STATUS_OPTIONS)[number];
@@ -19,31 +20,36 @@
   let statusFilter = $state<StatusFilter>('All');
 
   let search = $state('');
-	let debouncedSearch = $state('');
 	let page = $state(1);
   let data = $state<ArticleListResponse>();
   let isLoading = $state(true);
   let loadError = $state("");
 
-  $effect(() => {
-    async function load(params: URLSearchParams) {
-      try {
-        const res = await fetchArticles(params);
-        data = res;
-      } catch (err) {
-        loadError = `Something went wrong`;
-      } finally {
-        isLoading = false;
-      }
-    }
+	$effect(() => {
+		search;
+		page = 1;
+	});
 
-    const params = new URLSearchParams({
-      search: search,
-      status: statusFilter,
-    })
-    load(params);
+	$effect(() => {
+		async function load(params: URLSearchParams) {
+			try {
+				const res = await fetchArticles(params);
+				data = res;
+			} catch (err) {
+				loadError = `Something went wrong`;
+			} finally {
+				isLoading = false;
+			}
+		}
 
-  })
+		const params = new URLSearchParams({
+			search,
+			status: statusFilter,
+			page: String(page),
+			limit: '5'
+		});
+		load(params);
+	});
 
   function handleStatusChange(status: StatusFilter) {
 		statusFilter = status;
@@ -137,10 +143,12 @@
                 </p>
               </div>
               <div class="mt-2 flex items-center gap-3 md:hidden">
-                {article.status}
+                <ArticleStatusBadge 
+                  status={article.status}/>
               </div>
               <div class="hidden md:block">
-                {article.status}
+                <ArticleStatusBadge 
+                  status={article.status}/>
               </div>
               <span class="text-muted-foreground hidden truncate text-sm md:block">
                 {article.author}
@@ -166,10 +174,21 @@
               </div>
             </div>
           {/each}
+
         </div>
       {/if}
     </div>
-
-  </div>
+		{#if data?.pagination && data.pagination.total > 0}
+			<Pagination
+				page={page}
+				totalPages={data.pagination.totalPages}
+				total={data.pagination.total}
+				limit={data.pagination.limit}
+				onPageChange={(p) => {
+					page = p;
+				}}
+			/>
+		{/if}
+	</div>
 
 </div>

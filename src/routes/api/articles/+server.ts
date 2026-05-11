@@ -6,10 +6,24 @@ export const GET: RequestHandler = async ({url}) => {
 
   const search = url.searchParams.get('search') || '';
 	const status = (url.searchParams.get('status') || 'All') as ArticleStatus | 'All';
+  const page = parseInt(url.searchParams.get('page') || '1', 10);
+  const limit = parseInt(url.searchParams.get('limit') || '5', 10);
 
-  const items = filterArticles(search, status);
+  const filtered = filterArticles(search, status);
+  const total = filtered.length;
+  const totalPages = Math.ceil(total / limit);
+  const start = (page - 1) * limit;
+
+  const paginated = filtered.slice(start, start + limit);
+
     
   return json({
-		items
+		items: paginated,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages
+    }
 	});
 }
