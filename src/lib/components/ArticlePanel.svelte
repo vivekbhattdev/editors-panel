@@ -13,6 +13,7 @@
 	import Link from './ui/link/Link.svelte';
 	import ArticleStatusBadge from './ArticleStatusBadge.svelte';
 	import Pagination from './ui/pagination/Pagination.svelte';
+	import ArticleModal from './ArticleModal.svelte';
 
   const STATUS_OPTIONS = ['All', 'Published', 'Draft'] as const;
 	type StatusFilter = (typeof STATUS_OPTIONS)[number];
@@ -24,6 +25,7 @@
   let data = $state<ArticleListResponse>();
   let isLoading = $state(true);
   let loadError = $state("");
+  let isModalOpen = $state(false);
 
 	$effect(() => {
 		search;
@@ -56,6 +58,14 @@
 		page = 1;
 	}
 
+  function handleCreate() {
+    isModalOpen = true;
+  }
+
+  function closeModal() {
+    isModalOpen = false;
+  }
+
 </script>
 
 
@@ -67,7 +77,8 @@
         <h1 class="text-foreground text-2xl font-semibold">Articles</h1>
         <p class="text-muted-foreground mt-1">Manage and organize your content</p>
       </div>
-      <Button>
+      <Button 
+        onclick={handleCreate}>
         <Plus class="h-4 w-4" />
         New Article
       </Button>
@@ -189,6 +200,10 @@
 				}}
 			/>
 		{/if}
+
+    <ArticleModal 
+      isOpen={isModalOpen}
+      onClose={closeModal}/>
 	</div>
 
 </div>
