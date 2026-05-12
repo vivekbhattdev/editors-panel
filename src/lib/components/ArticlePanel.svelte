@@ -15,6 +15,8 @@
 	import Pagination from './ui/pagination/Pagination.svelte';
 	import ArticleModal from './ArticleModal.svelte';
 	import TextInput from './ui/textinput/TextInput.svelte';
+	import Dialog from './ui/dialog/Dialog.svelte';
+	import type { Article } from '$lib/types/article';
 
   const STATUS_OPTIONS = ['All', 'Published', 'Draft'] as const;
 	type StatusFilter = (typeof STATUS_OPTIONS)[number];
@@ -27,6 +29,7 @@
   let isLoading = $state(true);
   let loadError = $state("");
   let isModalOpen = $state(false);
+  let deleteArticle = $state<Article | null>(null);
 
 	$effect(() => {
 		search;
@@ -78,6 +81,23 @@
     
     loadArticles();
     closeModal();
+  }
+
+  function closeDeleteModal() {
+    deleteArticle = null;
+  }
+
+  async function handleDelete() {
+    if (!deleteArticle) return;
+    try {
+			await fetch(`/api/articles/${deleteArticle.id}`, 
+        { method: 'DELETE' }
+      );
+			await loadArticles();
+			closeDeleteModal();
+		} catch {
+      // show error
+		}
   }
 
 </script>
@@ -190,6 +210,7 @@
                   variant="ghost"
                   iconOnlyLabel="Delete"
                   title="Delete"
+                  onclick={() => (deleteArticle = article)}
                 >
                   <Trash2 class="h-4 w-4" />
                 </Button>
@@ -216,6 +237,17 @@
       isOpen={isModalOpen}
       onClose={closeModal}
       onSave={saveArticle}/>
+
+    <Dialog
+      open={!!deleteArticle}
+      title="Delete article!"
+      message="Are you sure you want to delete {deleteArticle?.title}?"
+      variant="danger"
+      okLabel="Delete"
+      cancelLabel="Cancel"
+      onOk={handleDelete}
+      onCancel={closeDeleteModal}
+    />
 	</div>
 
 </div>

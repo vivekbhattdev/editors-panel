@@ -29,3 +29,8 @@ export function createArticle(data: Omit<Article, 'id' | 'createdAt'>): Article 
 	articles = [newArticle, ...articles];
 	return newArticle;
 }
+
+export function deleteArticle(id: string): boolean {
+	articles = articles.filter(item => item.id !== id);
+	return true;
+}

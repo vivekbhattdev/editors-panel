@@ -30,6 +30,7 @@
 		secondary: "bg-gray-200 text-gray-800 hover:bg-gray-300",
 		outline: "border-2 border-blue-600 text-blue-600 hover:bg-blue-50",
     ghost: "border border-transparent bg-transparent text-muted-foreground hover:bg-secondary hover:text-foreground",
+    danger: "bg-destructive text-destructive-foreground hover:bg-destructive/90 focus:ring-destructive"
 	};
 </script>
 
