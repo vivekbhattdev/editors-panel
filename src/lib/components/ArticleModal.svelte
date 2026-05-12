@@ -1,43 +1,88 @@
 <script lang="ts">
 	import { X } from '@lucide/svelte';
-	import { z } from 'zod';
+	import { flattenError, z } from 'zod';
 
   import Button from './ui/button/Button.svelte';
-	import Input from './ui/input/Input.svelte';
+	import TextInput from '$lib/components/ui/textinput/TextInput.svelte';
+	import { ARTICLE_STATUSES } from '$lib/constants/article';
+	import TextArea from './ui/textarea/TextArea.svelte';
+	import Select from './ui/select/Select.svelte';
 
-	let { isOpen, onClose } = $props();
+	let { 
+    isOpen, 
+    onClose,
+    onSave
+  } = $props();
+	
 
+	$effect(() => {
+		if(!isOpen) {
+			resetForm();
+		}
+	})
 
   const ArticleFormSchema = z.object({
 		title: z.string().trim().min(1, 'Title is required'),
 		author: z.string().trim().min(1, 'Author is required'),
+		content: z.string().trim().min(1, 'Content is required'),
+    status: z.enum(ARTICLE_STATUSES)
 	});
 
   type ArticleFormValues = z.infer<typeof ArticleFormSchema>;
 
-  let title = $state('');
-	let author = $state('');
+	let form = $state<ArticleFormValues>({
+		title: '',
+		author: '',
+		content: '',
+		status: 'Draft'
+	})
 
-  function currentValues(): ArticleFormValues {
-		return {
-			title,
-			author,
-		};
+	function resetForm() {
+		form = { title: '', author: '', content: '', status: 'Draft' };
+		errors = {};
 	}
 
-  function handleSubmit(e: SubmitEvent){
+	let errors = $state<Record<string, string>>({});	
+
+	function validate(): boolean {
+		const result = ArticleFormSchema.safeParse(form);
+		if (result.success) {
+			errors = {};
+			return true;
+		}
+
+		const { fieldErrors } = flattenError(result.error);
+		const next: Record<string, string> = {};
+
+		for (const [key, messages] of Object.entries(fieldErrors)) {
+			const message = messages?.[0];
+			if (message) next[key] = message;
+		}
+		errors = next;
+
+		return false;
+	}
+
+  async function handleSubmit(e: SubmitEvent){
     e.preventDefault();
-		const parsed = ArticleFormSchema.safeParse(currentValues());
-    console.log('parsed : ', parsed);
+		const parsed = ArticleFormSchema.safeParse(form);
+    if (!parsed.success) {
+			validate();
+      return;
+    }
+    await onSave(parsed.data);
   }
   
 </script>
 
 {#if isOpen}
 	<div class="fixed inset-0 z-50 flex items-center justify-center">
-		<!-- <Button onclick={onClose}>Close</Button> -->
 		<div
-			class="relative z-10 mx-4 w-full max-w-2xl rounded-lg border border-border bg-card shadow-2xl"
+			class="absolute inset-0 bg-black/60 backdrop-blur-sm"
+			aria-label="Close dialog backdrop"
+		></div>
+		<div
+			class="z-10 mx-4 w-full max-w-2xl rounded-lg border border-border bg-card shadow-2xl"
 			role="dialog"
 			aria-modal="true"
 		>
@@ -54,16 +99,45 @@
 				</Button>
 			</div>
 
-      <form onsubmit={handleSubmit}>
-        <Input 
-          bind:value={title}
-          placeholder="Enter article title..."/>
-
+      <form onsubmit={handleSubmit} class="space-y-5 p-6">
+				<TextInput
+					label="Title"
+					id="title"
+					required
+					bind:value={form.title}
+					placeholder="Enter article title..."
+					error={errors.title}
+				/>
         
-        <Input 
-          bind:value={author}
-          placeholder="Enter author name..."/>
+				<TextInput
+					label="Author"
+					id="author"
+					required
+					bind:value={form.author}
+					placeholder="Enter author name..."
+					error={errors.author}
+				/>
 
+				<Select
+					label="Status"
+					id="status"
+					bind:value={form.status}
+					options={[
+						{ value: 'Draft', label: 'Draft' },
+						{ value: 'Published', label: 'Published' }
+					]}
+					error={errors.status}
+				/>
+
+				<TextArea
+					label="Content"
+					id="content"
+					required
+					bind:value={form.content}
+					placeholder="Enter article content..."
+					error={errors.content}
+					rows={5}
+				/>
 
         <Button
           type="submit">
@@ -71,8 +145,6 @@
         </Button>
 
       </form>
-
-
 		</div>
 	</div>
 {/if}

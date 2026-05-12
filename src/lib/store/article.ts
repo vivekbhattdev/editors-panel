@@ -18,3 +18,14 @@ export function filterArticles(search: string, status: ArticleStatus | 'All'): A
 export function getArticleById(id: string): Article | undefined {
 	return articles.find((article) => article.id === id);
 }
+
+export function createArticle(data: Omit<Article, 'id' | 'createdAt'>): Article {
+	const now = new Date().toISOString();
+	const newArticle: Article = {
+		...data,
+		id: Date.now().toString(),
+		createdAt: now
+	};
+	articles = [newArticle, ...articles];
+	return newArticle;
+}

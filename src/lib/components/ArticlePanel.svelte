@@ -14,6 +14,7 @@
 	import ArticleStatusBadge from './ArticleStatusBadge.svelte';
 	import Pagination from './ui/pagination/Pagination.svelte';
 	import ArticleModal from './ArticleModal.svelte';
+	import TextInput from './ui/textinput/TextInput.svelte';
 
   const STATUS_OPTIONS = ['All', 'Published', 'Draft'] as const;
 	type StatusFilter = (typeof STATUS_OPTIONS)[number];
@@ -32,25 +33,27 @@
 		page = 1;
 	});
 
-	$effect(() => {
-		async function load(params: URLSearchParams) {
-			try {
-				const res = await fetchArticles(params);
-				data = res;
-			} catch (err) {
-				loadError = `Something went wrong`;
-			} finally {
-				isLoading = false;
-			}
-		}
 
-		const params = new URLSearchParams({
+  async function loadArticles() {
+    const params = new URLSearchParams({
 			search,
 			status: statusFilter,
 			page: String(page),
 			limit: '5'
 		});
-		load(params);
+
+    try {
+      const res = await fetchArticles(params);
+      data = res;
+    } catch (err) {
+      loadError = `Something went wrong`;
+    } finally {
+      isLoading = false;
+    }
+  }
+
+	$effect(() => {
+		void loadArticles();
 	});
 
   function handleStatusChange(status: StatusFilter) {
@@ -64,6 +67,17 @@
 
   function closeModal() {
     isModalOpen = false;
+  }
+
+  async function saveArticle(formatData: any) {
+    await fetch('/api/articles', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formatData)
+    })
+    
+    loadArticles();
+    closeModal();
   }
 
 </script>
@@ -84,16 +98,13 @@
       </Button>
     </div>
 
-    <div class="mb-6 flex flex-col gap-4 sm:flex-row">
-      <div class="relative flex-1">
-        <Search
-          class="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2"
-        />
-        <input
-          type="text"
-          placeholder="Search articles..."
+    <div class="mb-6 flex flex-col gap-4 sm:flex-row items-center">
+      
+      <div class="flex-1">
+        <TextInput
+          id="search"
           bind:value={search}
-          class="border-border bg-card text-foreground placeholder:text-muted-foreground focus:ring-ring w-full rounded-md border py-2.5 pr-4 pl-10 transition-colors focus:ring-2 focus:outline-none"
+          placeholder="Search articles..."
         />
       </div>
 
@@ -203,7 +214,8 @@
 
     <ArticleModal 
       isOpen={isModalOpen}
-      onClose={closeModal}/>
+      onClose={closeModal}
+      onSave={saveArticle}/>
 	</div>
 
 </div>
