@@ -29,7 +29,8 @@
   let isLoading = $state(true);
   let loadError = $state("");
   let isModalOpen = $state(false);
-  let deleteArticle = $state<Article | null>(null);
+  let deletingArticle = $state<Article | null>(null);
+  let editingArticle = $state<Article | null>(null);
 
 	$effect(() => {
 		search;
@@ -70,27 +71,39 @@
 
   function closeModal() {
     isModalOpen = false;
+    editingArticle = null;
   }
 
-  async function saveArticle(formatData: any) {
-    await fetch('/api/articles', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formatData)
-    })
-    
-    loadArticles();
+  async function handleSave(formData: any) {
+    try {
+      if (!!editingArticle) {
+        const response = await fetch(`/api/articles/${editingArticle.id}`, {
+					method: 'PUT',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify(formData)
+				});
+      } else {
+        await fetch('/api/articles', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify(formData)
+				});
+      }
+      loadArticles();
+    } catch(err) {
+
+    }
     closeModal();
   }
 
   function closeDeleteModal() {
-    deleteArticle = null;
+    deletingArticle = null;
   }
 
   async function handleDelete() {
-    if (!deleteArticle) return;
+    if (!deletingArticle) return;
     try {
-			await fetch(`/api/articles/${deleteArticle.id}`, 
+			await fetch(`/api/articles/${deletingArticle.id}`, 
         { method: 'DELETE' }
       );
 			await loadArticles();
@@ -98,6 +111,11 @@
 		} catch {
       // show error
 		}
+  }
+
+  function handleEdit(article: Article) {
+    editingArticle = article;
+    isModalOpen = true;
   }
 
 </script>
@@ -203,6 +221,7 @@
                   variant="ghost"
                   iconOnlyLabel="Edit"
                   title="Edit"
+                  onclick={() => handleEdit(article)}
                 >
                   <Pencil class="h-4 w-4" />
                 </Button>
@@ -210,7 +229,7 @@
                   variant="ghost"
                   iconOnlyLabel="Delete"
                   title="Delete"
-                  onclick={() => (deleteArticle = article)}
+                  onclick={() => (deletingArticle = article)}
                 >
                   <Trash2 class="h-4 w-4" />
                 </Button>
@@ -236,12 +255,13 @@
     <ArticleModal 
       isOpen={isModalOpen}
       onClose={closeModal}
-      onSave={saveArticle}/>
+      onSave={handleSave}
+      article={editingArticle}/>
 
     <Dialog
-      open={!!deleteArticle}
+      open={!!deletingArticle}
       title="Delete article!"
-      message="Are you sure you want to delete {deleteArticle?.title}?"
+      message="Are you sure you want to delete {deletingArticle?.title}?"
       variant="danger"
       okLabel="Delete"
       cancelLabel="Cancel"

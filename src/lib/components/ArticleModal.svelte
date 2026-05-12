@@ -7,16 +7,36 @@
 	import { ARTICLE_STATUSES } from '$lib/constants/article';
 	import TextArea from './ui/textarea/TextArea.svelte';
 	import Select from './ui/select/Select.svelte';
+	import type { Article } from '$lib/types/article';
+
+	type ArticleModalProps = {
+		isOpen: boolean;
+		onClose: () => void;
+		onSave: (data: ArticleFormValues) => void | Promise<void>;
+		article?: Article | null;
+	}
 
 	let { 
     isOpen, 
     onClose,
-    onSave
-  } = $props();
-	
+    onSave,
+		article = null,
+  }: ArticleModalProps = $props();
 
 	$effect(() => {
 		if(!isOpen) {
+			resetForm();
+			return;
+		}
+		if (article) {
+			form = {
+				title: article.title,
+				author: article.author,
+				content: article.content,
+				status: article.status
+			}
+			errors = {};
+		} else {
 			resetForm();
 		}
 	})
@@ -88,7 +108,7 @@
 		>
 			<div class="flex items-center justify-between border-b border-border p-6">
 				<h2 class="text-xl font-semibold text-foreground">
-          Create Article
+					{!!article ? 'Update' : 'Create'} Article
 				</h2>
 				<Button
 					variant="ghost"
@@ -138,11 +158,18 @@
 					error={errors.content}
 					rows={5}
 				/>
-
-        <Button
-          type="submit">
-          Create Article
-        </Button>
+				
+				<div class="flex justify-end gap-3 pt-4">
+					<Button
+						variant="secondary"
+						onclick={onClose}>
+						Cancel
+					</Button>
+					<Button
+						type="submit">
+						{!!article ? 'Update' : 'Create'}           
+					</Button>
+				</div>
 
       </form>
 		</div>

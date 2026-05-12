@@ -34,3 +34,16 @@ export function deleteArticle(id: string): boolean {
 	articles = articles.filter(item => item.id !== id);
 	return true;
 }
+
+export function updateArticle(id: string, data: Omit<Article, 'id' | 'createdAt'>): Article | undefined{
+
+	const index = articles.findIndex(item => item.id === id);
+	if (index === -1) return undefined;
+
+	const updatedArticle = {
+		...articles[index],
+		...data,
+	}
+	articles = [...articles.slice(0, index), updatedArticle, ...articles.slice(index + 1)];
+	return updatedArticle;
+}
