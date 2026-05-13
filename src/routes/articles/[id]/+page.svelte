@@ -1,15 +1,27 @@
 <script lang="ts">
+	import { invalidateAll } from '$app/navigation';
+	import ArticleModal from '$lib/components/ArticleModal.svelte';
+	import ArticleStatusBadge from '$lib/components/ArticleStatusBadge.svelte';
+	import Button from '$lib/components/ui/button/Button.svelte';
 	import Link from '$lib/components/ui/link/Link.svelte';
-	import { ArrowLeft, Pencil } from '@lucide/svelte';
 	import type { Article } from '$lib/types/article';
 	import { renderArticleHtml } from '$lib/utils/content';
-	import Button from '$lib/components/ui/button/Button.svelte';
-	import ArticleStatusBadge from '$lib/components/ArticleStatusBadge.svelte';
 	import { formatDate } from '$lib/utils/date';
+	import { ArrowLeft, Pencil } from '@lucide/svelte';
 
 	let { data } = $props<{ data: { article: Article } }>();
 
 	const html = $derived(renderArticleHtml(data?.article.content));
+
+	let isModalOpen = $state(false);
+
+	function openEdit() {
+		isModalOpen = true;
+	}
+
+	function closeModal() {
+		isModalOpen = false;
+	}
 </script>
 
 <div class="bg-background">
@@ -22,7 +34,7 @@
 			<div class="flex items-center gap-3 sm:gap-4">
 				<ArticleStatusBadge status={data.article.status} />
 
-				<Button>
+				<Button onclick={openEdit}>
 					<Pencil class="h-4 w-4" />
 					Edit Article
 				</Button>
@@ -40,5 +52,12 @@
 		<article>
 			{@html html}
 		</article>
+
+		<ArticleModal
+			isOpen={isModalOpen}
+			onClose={closeModal}
+			onSuccess={invalidateAll}
+			article={data.article}
+		/>
 	</div>
 </div>

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { X } from '@lucide/svelte';
+	import { Loader, X } from '@lucide/svelte';
 	import { flattenError, z } from 'zod';
 
   import Button from './ui/button/Button.svelte';
@@ -12,19 +12,20 @@
 	type ArticleModalProps = {
 		isOpen: boolean;
 		onClose: () => void;
-		onSave: (data: ArticleFormValues) => void | Promise<void>;
+		onSuccess?: () => void | Promise<void>;
 		article?: Article | null;
 	}
 
-	let { 
-    isOpen, 
-    onClose,
-    onSave,
-		article = null,
-  }: ArticleModalProps = $props();
+	let {
+		isOpen,
+		onClose,
+		onSuccess,
+		article = null
+	}: ArticleModalProps = $props();
 
 	$effect(() => {
-		if(!isOpen) {
+		if (!isOpen) {
+			isSaving = false;
 			resetForm();
 			return;
 		}
@@ -60,9 +61,45 @@
 	function resetForm() {
 		form = { title: '', author: '', content: '', status: 'Draft' };
 		errors = {};
+		saveError = null;
 	}
 
-	let errors = $state<Record<string, string>>({});	
+	let errors = $state<Record<string, string>>({});
+	let saveError = $state<string | null>(null);
+	let isSaving = $state(false);
+
+	async function persistArticle(data: ArticleFormValues): Promise<boolean> {
+		const url = article ? `/api/articles/${article.id}` : '/api/articles';
+		const method = article ? 'PUT' : 'POST';
+
+		let res: Response;
+		try {
+			res = await fetch(url, {
+				method,
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(data)
+			});
+		} catch {
+			saveError = 'Network error. Please try again.';
+			return false;
+		}
+
+		const payload = (await res.json().catch(() => ({}))) as {
+			errors?: Record<string, string>;
+			error?: string;
+		};
+
+		if (!res.ok) {
+			if (payload.errors && typeof payload.errors === 'object') {
+				errors = { ...payload.errors };
+			} else {
+				saveError = payload.error ?? 'Something went wrong';
+			}
+			return false;
+		}
+
+		return true;
+	}
 
 	function validate(): boolean {
 		const result = ArticleFormSchema.safeParse(form);
@@ -83,15 +120,25 @@
 		return false;
 	}
 
-  async function handleSubmit(e: SubmitEvent){
-    e.preventDefault();
+	async function handleSubmit(e: SubmitEvent) {
+		e.preventDefault();
 		const parsed = ArticleFormSchema.safeParse(form);
-    if (!parsed.success) {
+		if (!parsed.success) {
 			validate();
-      return;
-    }
-    await onSave(parsed.data);
-  }
+			return;
+		}
+		saveError = null;
+		errors = {};
+		isSaving = true;
+		try {
+			if (await persistArticle(parsed.data)) {
+				await onSuccess?.();
+				onClose();
+			}
+		} finally {
+			isSaving = false;
+		}
+	}
   
 </script>
 
@@ -114,6 +161,7 @@
 					variant="ghost"
 					onclick={onClose}
 					aria-label="Close"
+					disabled={isSaving}
 				>
 					<X class="h-5 w-5" />
 				</Button>
@@ -158,16 +206,18 @@
 					error={errors.content}
 					rows={5}
 				/>
-				
+
+				{#if saveError}
+					<p class="text-destructive text-sm" role="alert">{saveError}</p>
+				{/if}
+
 				<div class="flex justify-end gap-3 pt-4">
-					<Button
-						variant="secondary"
-						onclick={onClose}>
-						Cancel
-					</Button>
-					<Button
-						type="submit">
-						{!!article ? 'Update' : 'Create'}           
+					<Button variant="secondary" onclick={onClose} disabled={isSaving}>Cancel</Button>
+					<Button type="submit" disabled={isSaving} aria-busy={isSaving}>
+						{#if isSaving}
+							<Loader class="h-4 w-4 shrink-0 animate-spin" aria-hidden="true" />
+						{/if}
+						{!!article ? 'Update' : 'Create'}
 					</Button>
 				</div>
 

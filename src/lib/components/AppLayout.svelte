@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { FileText, Settings, Menu, Search } from '@lucide/svelte';
+	import { goto } from '$app/navigation';
+	import { FileText, Settings, Menu } from '@lucide/svelte';
 	import type { Snippet } from 'svelte';
 	import Button from './ui/button/Button.svelte';
 
@@ -29,8 +30,10 @@
 		}
 	}
 
-  function handleNavClick(nav: NavItem) {
+	function handleNavClick(nav: NavItem) {
 		isSidebarOpen = false;
+		const path = nav === 'settings' ? '/settings' : '/articles';
+		void goto(path);
 	}
 
 </script>
@@ -80,7 +83,7 @@
 					{@const Icon = iconFor(item.id)}
 					<li>
             <Button
-              variant={activeNav === item.id ? 'primary' : 'secondary'}
+              variant={activeNav === item.id ? 'primary' : 'ghost'}
               className="w-full justify-start"
               onclick={() => handleNavClick(item.id)}
             >

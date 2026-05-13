@@ -74,28 +74,6 @@
     editingArticle = null;
   }
 
-  async function handleSave(formData: any) {
-    try {
-      if (!!editingArticle) {
-        const response = await fetch(`/api/articles/${editingArticle.id}`, {
-					method: 'PUT',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify(formData)
-				});
-      } else {
-        await fetch('/api/articles', {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify(formData)
-				});
-      }
-      loadArticles();
-    } catch(err) {
-
-    }
-    closeModal();
-  }
-
   function closeDeleteModal() {
     deletingArticle = null;
   }
@@ -252,11 +230,12 @@
 			/>
 		{/if}
 
-    <ArticleModal 
+    <ArticleModal
       isOpen={isModalOpen}
       onClose={closeModal}
-      onSave={handleSave}
-      article={editingArticle}/>
+      onSuccess={loadArticles}
+      article={editingArticle}
+    />
 
     <Dialog
       open={!!deletingArticle}
